@@ -6,8 +6,15 @@ import {
   syncLinesFromFaces,
 } from 'replicad-threejs-helper';
 import { BufferGeometry } from 'three';
+import { Mesh } from './types';
 
-export default React.memo(function ShapeMeshes({ faces, edges }: any) {
+export default React.memo(function ShapeMeshes(mesh: Mesh) {
+  const {
+    faces,
+    edges,
+    color,
+    opacity,
+  } = mesh
   const { invalidate } = useThree();
 
   const body = useRef(new BufferGeometry());
@@ -40,6 +47,8 @@ export default React.memo(function ShapeMeshes({ faces, edges }: any) {
       <mesh geometry={body.current} >
         {/* the offsets are here to avoid z fighting between the mesh and the lines */}
         <meshStandardMaterial
+          color={color}
+          opacity={opacity}
           polygonOffset
           polygonOffsetFactor={2.0}
           polygonOffsetUnits={1.0}

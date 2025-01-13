@@ -65,8 +65,7 @@ export default function ReplicadApp() {
       <ThreeContext>
         {mesh.map((shape, index) => <ReplicadMesh
           key={index}
-          edges={shape.edges}
-          faces={shape.faces}
+          {...shape}
         />)}
       </ThreeContext>
     ) : (

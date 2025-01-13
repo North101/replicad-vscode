@@ -25,7 +25,7 @@ const started = init();
 
 function createBasicShapeConfig(
   inputShapes: unknown | unknown[] | InputShape[] | InputShape,
-): replicad.Shape<any>[] {
+): InputShape[] {
   if (!inputShapes) return []
 
   // We accept a single shape or an array of shapes
@@ -34,24 +34,31 @@ function createBasicShapeConfig(
     : [inputShapes]
 
   return shapes
-    .map((inputShape): replicad.Shape<any> =>
+    .map((inputShape, index) =>
       // We accept shapes without additional configuration
       inputShape.shape
-        ? inputShape.shape
-        : inputShape
+        ? {
+            ...inputShape,
+            name: inputShape.name ?? `shape ${index}`,
+        }
+        : {
+            name: `shape ${index}`,
+            shape: inputShape,
+        }
     )
 }
 
 async function createBlob(code: string, params: object): Promise<Blob[]> {
   const shapes = await runCode(code, params)
   return createBasicShapeConfig(shapes)
-    .map(shape => shape.blobSTL())
+    .map(shape => shape.shape.blobSTL())
 }
 
 async function createMesh(code: string, params: object): Promise<Mesh[]> {
   const shapes = await runCode(code, params)
   return createBasicShapeConfig(shapes)
-    .map(shape => ({
+    .map(({shape, ...rest}) => ({
+      ...rest,
       faces: shape.mesh(),
       edges: shape.meshEdges(),
     }))

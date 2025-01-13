@@ -1,17 +1,5 @@
 import * as replicad from 'replicad'
 
-export interface Mesh {
-  faces: replicad.ShapeMesh
-  edges: {
-    lines: number[]
-    edgeGroups: {
-      start: number
-      count: number
-      edgeId: number
-    }[]
-  }
-}
-
 export interface InputShape {
   shape: replicad.Shape<any>
   name?: string
@@ -21,4 +9,16 @@ export interface InputShape {
   highlightEdge?: any
   highlightFace?: any
   strokeType?: string
+}
+
+export interface Mesh extends Omit<InputShape, 'shape'> {
+  faces: replicad.ShapeMesh
+  edges: {
+    lines: number[]
+    edgeGroups: {
+      start: number
+      count: number
+      edgeId: number
+    }[]
+  }
 }
