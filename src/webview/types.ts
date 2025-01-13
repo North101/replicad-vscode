@@ -22,3 +22,15 @@ export interface Mesh extends Omit<InputShape, 'shape'> {
     }[]
   }
 }
+
+export interface SuccessResult<T>  {
+  type: 'success'
+  value: T
+}
+
+export interface ErrorResult {
+  type: 'error'
+  error: unknown
+}
+
+export type Result<T> = SuccessResult<T> | ErrorResult

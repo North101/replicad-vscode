@@ -8,7 +8,7 @@ import ThreeContext from './ThreeContext'
 
 import { Shape } from 'replicad'
 import { MessageTypes } from '../types'
-import { Mesh } from './types'
+import { Mesh, Result } from './types'
 import ReplicadWorker from './worker.js?worker&inline'
 
 const worker = wrap(new ReplicadWorker()) as unknown as {
@@ -24,7 +24,7 @@ const worker = wrap(new ReplicadWorker()) as unknown as {
 export default function ReplicadApp() {
   const [code, setCode] = useState<string | null>(null)
   const [params, setParams] = useState<object | null>(null)
-  const [mesh, setMesh] = useState<Mesh[] | null>(null)
+  const [mesh, setMesh] = useState<Result<Mesh[]> | null>(null)
 
   const downloadModel = async () => {
     if (!(code && params)) return
@@ -47,27 +47,82 @@ export default function ReplicadApp() {
   }, [])
 
   useEffect(() => {
+    let isSubscribed = true
+
+    const getParams = async () => {
+      if (!code) return
+
+      const params = await worker.extractDefaultParamsFromCode(code)
+      if (!isSubscribed) return
+
+      setParams(params)
+    }
+
     setParams(null)
-    if (code) {
-      worker.extractDefaultParamsFromCode(code).then((params) => setParams(params))
+    getParams()
+
+    return () => {
+      isSubscribed = false
     }
   }, [code])
 
   useEffect(() => {
+    let isSubscribed = true
+
+    const getMesh = async () => {
+      try {
+        if (!(code && params)) return
+
+        const mesh = await worker.createMesh(code, params)
+        if (!isSubscribed) return
+
+        setMesh({
+          type: 'success',
+          value: mesh,
+        })
+      } catch (e) {
+        if (!isSubscribed) return
+
+        setMesh({
+          type: 'error',
+          error: e,
+        })
+      }
+    }
+
     setMesh(null)
-    if (code && params) {
-      worker.createMesh(code, params).then(m => setMesh(m))
+    getMesh()
+
+    return () => {
+      isSubscribed = false
     }
   }, [code, params])
 
   return (
     mesh ? (
-      <ThreeContext>
-        {mesh.map((shape, index) => <ReplicadMesh
-          key={index}
-          {...shape}
-        />)}
-      </ThreeContext>
+      mesh.type == 'success' ? (
+        <ThreeContext>
+          {mesh.value.map((shape, index) => <ReplicadMesh
+            key={index}
+            {...shape}
+          />)}
+        </ThreeContext>
+      ) : (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '2em',
+            width: '100vw',
+            height: '100vh',
+            background: 'var(--vscode-editor-background)',
+            color: 'var(--vscode-editor-foreground)',
+          }}
+        >
+          Error
+        </div>
+      )
     ) : (
       <div
         style={{
@@ -81,7 +136,7 @@ export default function ReplicadApp() {
           color: 'var(--vscode-editor-foreground)',
         }}
       >
-        Loading...
+        {code ? 'Loading...' : 'Invalid Model'}
       </div>
     )
   )
