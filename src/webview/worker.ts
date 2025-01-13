@@ -3,6 +3,7 @@ import opencascadeWasm from 'replicad-opencascadejs/src/replicad_single.wasm?url
 import * as replicad from 'replicad'
 import { expose } from 'comlink'
 import { buildModuleEvaluator, runInContext } from './vm'
+import { Mesh } from './types'
 
 // This is the logic to load the web assembly code into replicad
 let loaded = false;
@@ -22,26 +23,36 @@ const init = async () => {
 };
 const started = init();
 
-const getFirstShape = (data: any) => {
-  if (Array.isArray(data)) {
-    return getFirstShape(data[0])
-  } else if (typeof data === 'object') {
+const getShape = (data: any) => {
+  if (typeof data === 'object') {
     return data.shape
   }
   return data
 }
 
-async function createBlob(code: string, params: object) {
-  const shape = getFirstShape(await runCode(code, params))!
-  return shape.blobSTL();
+async function createBlob(code: string, params: object): Promise<Blob[]> {
+  const shapes = await runCode(code, params)
+  if (Array.isArray(shapes)) {
+    return shapes.map(getShape).map(shape => shape.blobSTL())
+  }
+  return [
+    getShape(shapes).blobSTL()
+  ];
 }
 
-async function createMesh(code: string, params: object) {
-  const shape = getFirstShape(await runCode(code, params))!
-  return {
+async function createMesh(code: string, params: object): Promise<Mesh[]> {
+  const shapes = await runCode(code, params)
+  if (Array.isArray(shapes)) {
+    return shapes.map(getShape).map(shape => ({
+      faces: shape.mesh(),
+      edges: shape.meshEdges(),
+    }))
+  }
+  const shape = getShape(shapes)
+  return [{
     faces: shape.mesh(),
     edges: shape.meshEdges(),
-  };
+  }];
 }
 
 function runInContextAsOC(code: string, context = {}) {

@@ -7,12 +7,13 @@ import ReplicadMesh from './ReplicadMesh'
 import ThreeContext from './ThreeContext'
 
 import { Shape } from 'replicad'
-import ReplicadWorker from './worker.js?worker&inline'
 import { MessageTypes } from '../types'
+import { Mesh } from './types'
+import ReplicadWorker from './worker.js?worker&inline'
 
 const worker = wrap(new ReplicadWorker()) as unknown as {
-  createBlob: (code: string, params: object) => Promise<Blob>,
-  createMesh: (code: string, params: object) => Promise<{}>,
+  createBlob: (code: string, params: object) => Promise<Blob[]>,
+  createMesh: (code: string, params: object) => Promise<Mesh[]>,
   runCode: (code: string, params: object) => Promise<Shape<any>>,
   runAsFunction: (code: string, params: object) => Promise<Shape<any>>,
   runAsModule: (code: string, params: object) => Promise<Shape<any>>,
@@ -23,14 +24,14 @@ const worker = wrap(new ReplicadWorker()) as unknown as {
 export default function ReplicadApp() {
   const [code, setCode] = useState<string | null>(null)
   const [params, setParams] = useState<object | null>(null)
-  const [mesh, setMesh] = useState<any | null>(null)
+  const [mesh, setMesh] = useState<Mesh[] | null>(null)
 
   const downloadModel = async () => {
     if (!(code && params)) return
 
     const name = await worker.extractDefaultNameFromCode(code)
     const blob = await worker.createBlob(code, params)
-    FileSaver.saveAs(blob, `${name ?? 'shape'}.stl`)
+    FileSaver.saveAs(blob[0], `${name ?? 'shape'}.stl`)
   }
 
   useEffect(() => {
@@ -62,7 +63,11 @@ export default function ReplicadApp() {
   return (
     mesh ? (
       <ThreeContext>
-        <ReplicadMesh edges={mesh.edges} faces={mesh.faces} />
+        {mesh.map((shape, index) => <ReplicadMesh
+          key={index}
+          edges={shape.edges}
+          faces={shape.faces}
+        />)}
       </ThreeContext>
     ) : (
       <div
