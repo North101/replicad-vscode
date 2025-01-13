@@ -37,10 +37,7 @@ export default React.memo(function ShapeMeshes({ faces, edges }: any) {
 
   return (
     <group>
-      <mesh geometry={body.current} 
-        onPointerMove={(e: any) => {
-          console.log(e)
-        }}>
+      <mesh geometry={body.current} >
         {/* the offsets are here to avoid z fighting between the mesh and the lines */}
         <meshStandardMaterial
           color='#5a8296'

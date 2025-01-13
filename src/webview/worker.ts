@@ -23,7 +23,6 @@ const init = async () => {
 const started = init();
 
 const getFirstShape = (data: any) => {
-  console.log('getFirstShape', data)
   if (Array.isArray(data)) {
     return getFirstShape(data[0])
   } else if (typeof data === 'object') {
