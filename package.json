@@ -1,0 +1,67 @@
+{
+  "name": "replicad-vscode",
+  "displayName": "Replicad VSCode",
+  "description": "",
+  "version": "1.0.2",
+  "publisher": "vscode-replicad",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [],
+  "keywords": [],
+  "license": "MIT",
+  "main": "./build/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "replicad-vscode.preview",
+        "title": "Preview Model",
+        "icon": "$(open-preview)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "replicad-vscode.preview",
+          "when": "editorLangId == javascript",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run prod",
+    "dev": "vite dev",
+    "build": "vite build",
+    "start": "NO_TYPES=true vite build --watch",
+    "compile": "tsc -p ./",
+    "coverage": "jest --coverage",
+    "deploy": "vsce publish",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "@react-three/drei": "9.120.8",
+    "@react-three/fiber": "8.17.12",
+    "@vitejs/plugin-react": "4.3.4",
+    "comlink": "^4.3.1",
+    "file-saver": "^2.0.5",
+    "path": "^0.12.7",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "replicad": "^0.17.4",
+    "replicad-opencascadejs": "^0.17.4",
+    "replicad-threejs-helper": "^0.17.0",
+    "three": "^0.172.0"
+  },
+  "devDependencies": {
+    "@types/file-saver": "^2.0.7",
+    "@types/node": "22.10.5",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "@types/three": "^0.172.0",
+    "@types/vscode": "^1.96.0",
+    "typescript": "^5.7.2",
+    "vite-plugin-wasm": "^3.4.1",
+    "vite": "6.0.7"
+  }
+}

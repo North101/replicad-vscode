@@ -1,0 +1,7 @@
+**/*
+
+!build/
+!CHANGELOG.md
+!packages.json
+!media/
+!README.md
