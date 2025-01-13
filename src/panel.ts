@@ -10,7 +10,7 @@ export function createPanel(context: vscode.ExtensionContext) {
     'webview',
     'Preview Replicad Model',
     {
-      viewColumn: vscode.ViewColumn.Three,
+      viewColumn: vscode.ViewColumn.Beside,
       preserveFocus: true,
     },
     {
