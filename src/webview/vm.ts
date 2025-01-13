@@ -13,7 +13,7 @@ function buildFunctionWithContext(eval_string: string, context: object) {
   `
 }
 
-function buildEvaluator(eval_string: string, context: object) {
+function buildEvaluator(eval_string: string, context: {}) {
   let template = buildFunctionWithContext(eval_string, context)
   let functor = Function(template)
   return functor()

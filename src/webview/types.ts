@@ -1,7 +1,8 @@
 import * as replicad from 'replicad'
+import { TopoDS_Shape } from 'replicad-opencascadejs'
 
-export interface InputShape {
-  shape: replicad.Shape<any>
+export interface InputShape<T extends TopoDS_Shape> {
+  shape: replicad.Shape<T>
   name?: string
   color?: string
   opacity?: number
@@ -11,7 +12,13 @@ export interface InputShape {
   strokeType?: string
 }
 
-export interface Mesh extends Omit<InputShape, 'shape'> {
+export type ShapeResult<T extends TopoDS_Shape> = 
+  | replicad.Shape<T>
+  | replicad.Shape<T>[]
+  | InputShape<T>
+  | InputShape<T>[]
+
+export interface Mesh<T extends TopoDS_Shape> extends Omit<InputShape<T>, 'shape'> {
   faces: replicad.ShapeMesh
   edges: {
     lines: number[]
@@ -23,7 +30,7 @@ export interface Mesh extends Omit<InputShape, 'shape'> {
   }
 }
 
-export interface SuccessResult<T>  {
+export interface SuccessResult<T> {
   type: 'success'
   value: T
 }

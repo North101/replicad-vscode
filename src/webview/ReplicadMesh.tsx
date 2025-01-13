@@ -8,7 +8,7 @@ import {
 import { BufferGeometry } from 'three';
 import { Mesh } from './types';
 
-export default React.memo(function ShapeMeshes(mesh: Mesh) {
+export default React.memo(function ShapeMeshes(mesh: Mesh<any>) {
   const {
     faces,
     edges,

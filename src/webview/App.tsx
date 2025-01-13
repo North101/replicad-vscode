@@ -6,25 +6,17 @@ import FileSaver from 'file-saver'
 import ReplicadMesh from './ReplicadMesh'
 import ThreeContext from './ThreeContext'
 
-import { Shape } from 'replicad'
 import { MessageTypes } from '../types'
 import { Mesh, Result } from './types'
+import type { ReplicadWorkerType }  from './worker.js'
 import ReplicadWorker from './worker.js?worker&inline'
 
-const worker = wrap(new ReplicadWorker()) as unknown as {
-  createBlob: (code: string, params: object) => Promise<Blob[]>,
-  createMesh: (code: string, params: object) => Promise<Mesh[]>,
-  runCode: (code: string, params: object) => Promise<Shape<any>>,
-  runAsFunction: (code: string, params: object) => Promise<Shape<any>>,
-  runAsModule: (code: string, params: object) => Promise<Shape<any>>,
-  extractDefaultParamsFromCode: (code: string) => Promise<object | null>,
-  extractDefaultNameFromCode: (code: string) => Promise<string | null>,
-}
+const worker = wrap<typeof ReplicadWorkerType>(new ReplicadWorker())
 
 export default function ReplicadApp() {
   const [code, setCode] = useState<string | null>(null)
-  const [params, setParams] = useState<object | null>(null)
-  const [mesh, setMesh] = useState<Result<Mesh[]> | null>(null)
+  const [params, setParams] = useState<{} | null>(null)
+  const [mesh, setMesh] = useState<Result<Mesh<any>[]> | null>(null)
 
   const downloadModel = async () => {
     if (!(code && params)) return

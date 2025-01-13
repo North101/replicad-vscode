@@ -1,8 +1,8 @@
-import { expose } from 'comlink'
+import { Endpoint, expose } from 'comlink'
 import * as replicad from 'replicad'
 import opencascade from 'replicad-opencascadejs/src/replicad_single.js?inline'
 import opencascadeWasm from 'replicad-opencascadejs/src/replicad_single.wasm?url'
-import { InputShape, Mesh } from './types'
+import { InputShape, Mesh, ShapeResult } from './types'
 import { buildModuleEvaluator, runInContext } from './vm'
 
 // This is the logic to load the web assembly code into replicad
@@ -24,8 +24,8 @@ const init = async () => {
 const started = init();
 
 function createBasicShapeConfig(
-  inputShapes: unknown | unknown[] | InputShape[] | InputShape,
-): InputShape[] {
+  inputShapes: ShapeResult<any>,
+): InputShape<any>[] {
   if (!inputShapes) return []
 
   // We accept a single shape or an array of shapes
@@ -36,28 +36,28 @@ function createBasicShapeConfig(
   return shapes
     .map((inputShape, index) =>
       // We accept shapes without additional configuration
-      inputShape.shape
+      'shape' in inputShape
         ? {
-            ...inputShape,
-            name: inputShape.name ?? `shape ${index}`,
+          ...inputShape,
+          name: inputShape.name ?? `shape ${index}`,
         }
         : {
-            name: `shape ${index}`,
-            shape: inputShape,
+          name: `shape ${index}`,
+          shape: inputShape,
         }
     )
 }
 
-async function createBlob(code: string, params: object): Promise<Blob[]> {
+async function createBlob(code: string, params: {}): Promise<Blob[]> {
   const shapes = await runCode(code, params)
   return createBasicShapeConfig(shapes)
     .map(shape => shape.shape.blobSTL())
 }
 
-async function createMesh(code: string, params: object): Promise<Mesh[]> {
+async function createMesh(code: string, params: {}): Promise<Mesh<any>[]> {
   const shapes = await runCode(code, params)
   return createBasicShapeConfig(shapes)
-    .map(({shape, ...rest}) => ({
+    .map(({ shape, ...rest }) => ({
       ...rest,
       faces: shape.mesh(),
       edges: shape.meshEdges(),
@@ -77,7 +77,7 @@ return main(replicad, __inputParams || dp)
   return runInContext(editedText, context);
 }
 
-async function runAsFunction(code: string, params: object) {
+async function runAsFunction(code: string, params: {}): Promise<ShapeResult<any>> {
   await started;
 
   return runInContextAsOC(code, {
@@ -87,21 +87,21 @@ async function runAsFunction(code: string, params: object) {
   });
 }
 
-async function runAsModule(code: string, params: object) {
+async function runAsModule(code: string, params: {}): Promise<ShapeResult<any>> {
   const module = await buildModuleEvaluator(code);
 
   if (module.default) return module.default(params || module.defaultParams);
   return module.main(replicad, params || module.defaultParams || {});
 }
 
-const runCode = async (code: string, params: object) => {
+const runCode = async (code: string, params: {}): Promise<ShapeResult<any>> => {
   if (code.match(/^\s*export\s+/m)) {
     return runAsModule(code, params);
   }
   return runAsFunction(code, params);
 };
 
-const extractDefaultParamsFromCode = async (code: string) => {
+const extractDefaultParamsFromCode = async (code: string): Promise<{} | null> => {
   if (code.match(/^\s*export\s+/m)) {
     const module = await buildModuleEvaluator(code);
     return module.defaultParams || null;
@@ -123,7 +123,7 @@ try {
   }
 };
 
-const extractDefaultNameFromCode = async (code: string) => {
+const extractDefaultNameFromCode = async (code: string): Promise<string | null> => {
   if (code.match(/^\s*export\s+/m)) {
     const module = await buildModuleEvaluator(code);
     return module.defaultName || null;
@@ -141,13 +141,13 @@ try {
   try {
     return runInContext(editedText, {});
   } catch (e) {
-    return {};
+    return null;
   }
 };
 
 (self as any).replicad = replicad
 
-const service = {
+const ReplicadWorker = {
   createBlob,
   createMesh,
   runAsFunction,
@@ -156,5 +156,8 @@ const service = {
   extractDefaultParamsFromCode,
   extractDefaultNameFromCode,
 }
-expose(service, self as any);
-export default service
+expose(ReplicadWorker, self as Endpoint);
+
+export type {
+  ReplicadWorker as ReplicadWorkerType,
+}
