@@ -12,7 +12,7 @@ export interface InputShape<T extends TopoDS_Shape> {
   strokeType?: string
 }
 
-export type ShapeResult<T extends TopoDS_Shape> = 
+export type ShapeResult<T extends TopoDS_Shape> =
   | replicad.Shape<T>
   | replicad.Shape<T>[]
   | InputShape<T>
@@ -40,4 +40,6 @@ export interface ErrorResult {
   error: unknown
 }
 
-export type Result<T> = SuccessResult<T> | ErrorResult
+export type Result<T> =
+  | SuccessResult<T>
+  | ErrorResult

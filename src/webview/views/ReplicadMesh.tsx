@@ -6,7 +6,7 @@ import {
   syncLinesFromFaces,
 } from 'replicad-threejs-helper';
 import { BufferGeometry } from 'three';
-import { Mesh } from './types';
+import { Mesh } from '../types';
 
 export default React.memo(function ShapeMeshes(mesh: Mesh<any>) {
   const {

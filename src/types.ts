@@ -1,10 +1,12 @@
 export interface InitMessageType {
-    type: 'init'
+  type: 'init'
 }
 
 export interface CodeMessageType {
-    type: 'code'
-    value: string | null
+  type: 'code'
+  value: string | null
 }
 
-export type MessageTypes = InitMessageType | CodeMessageType
+export type MessageTypes =
+  | InitMessageType
+  | CodeMessageType

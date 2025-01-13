@@ -14,7 +14,7 @@ export default defineConfig({
     outDir: 'build',
     lib: {
       entry: {
-        extension: path.resolve(__dirname, 'src/extension.ts'),
+        extension: path.resolve(__dirname, 'src/extension/index.ts'),
         webview: path.resolve(__dirname, 'src/webview/index.tsx'),
       }
     },

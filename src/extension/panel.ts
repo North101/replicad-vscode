@@ -1,8 +1,8 @@
 import path from 'path'
 import vscode from 'vscode'
-import { MessageTypes } from './types'
+import { MessageTypes } from '../types'
 
-let panel: vscode.WebviewPanel | undefined
+let panel: vscode.WebviewPanel | null = null
 
 export function createPanel(context: vscode.ExtensionContext) {
   if (panel) return
@@ -21,7 +21,7 @@ export function createPanel(context: vscode.ExtensionContext) {
     },
   )
   panel.onDidDispose(() => {
-    panel = undefined
+    panel = null
   })
 
   // Set URI to be the path to bundle
@@ -32,49 +32,51 @@ export function createPanel(context: vscode.ExtensionContext) {
 
   // Render html of webview here
   panel.webview.html = createWebviewHTML(scriptUri)
+
   panel.webview.onDidReceiveMessage(e => {
     const msg: MessageTypes = e
     switch (msg.type) {
       case 'init': {
-        onDidChangeActiveTextEditor(vscode.window.activeTextEditor)
+        updatePanel(vscode.window.activeTextEditor?.document)
       }
     }
   })
 }
 
 export function onDidSaveTextDocument(document: vscode.TextDocument) {
-  const editor = vscode.window.activeTextEditor
-  if (editor?.document != document) return
+  if (document != vscode.window.activeTextEditor?.document) return
 
-  onDidChangeActiveTextEditor(editor)
+  updatePanel(document)
 }
 
 export function onDidChangeActiveTextEditor(editor?: vscode.TextEditor) {
-  const isJavascript = editor?.document.languageId == 'javascript'
+  updatePanel(editor?.document)
+}
+
+function updatePanel(document?: vscode.TextDocument) {
+  if (!panel) return
+
+  const isJavascript = document?.languageId == 'javascript'
   if (!isJavascript) return
 
-  setPanelTitle(editor.document)
-  sendPanelMessage({
+  setPanelTitle(panel, document)
+  sendPanelMessage(panel, {
     type: 'code',
-    value: editor.document.getText(),
+    value: document.getText(),
   })
 }
 
-function setPanelTitle(document: vscode.TextDocument) {
-  if (!panel) return
-
+function setPanelTitle(panel: vscode.WebviewPanel, document: vscode.TextDocument) {
   panel.title = `Preview ${path.basename(document.uri.fsPath)}`
 }
 
-function sendPanelMessage(msg: MessageTypes) {
-  if (!panel) return
-
+function sendPanelMessage(panel: vscode.WebviewPanel, msg: MessageTypes) {
   panel.webview.postMessage(msg)
 }
 
 // Creates the HTML page for webview
-function createWebviewHTML(scriptUri: vscode.Uri): string {
-  return (`
+function createWebviewHTML(scriptUri: vscode.Uri) {
+  return `
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -93,16 +95,13 @@ function createWebviewHTML(scriptUri: vscode.Uri): string {
       }
     </style>
     <script>
-        const vscode = acquireVsCodeApi()
-        window.onload = function() {
-          vscode.postMessage({
-            type: 'init',
-          })
-        }
+      const vscode = acquireVsCodeApi()
+      window.onload = () => vscode.postMessage({
+        type: 'init',
+      })
     </script>
     <script src="${scriptUri}" />
   </body>
 </html>
 `
-  )
 }

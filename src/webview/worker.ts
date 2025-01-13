@@ -159,5 +159,5 @@ const ReplicadWorker = {
 expose(ReplicadWorker, self as Endpoint);
 
 export type {
-  ReplicadWorker as ReplicadWorkerType,
+  ReplicadWorker as ReplicadWorkerType
 }

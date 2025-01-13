@@ -6,10 +6,10 @@ import FileSaver from 'file-saver'
 import ReplicadMesh from './ReplicadMesh'
 import ThreeContext from './ThreeContext'
 
-import { MessageTypes } from '../types'
-import { Mesh, Result } from './types'
-import type { ReplicadWorkerType }  from './worker.js'
-import ReplicadWorker from './worker.js?worker&inline'
+import { MessageTypes } from '../../types'
+import { Mesh, Result } from '../types'
+import type { ReplicadWorkerType } from '../worker.js'
+import ReplicadWorker from '../worker.js?worker&inline'
 
 const worker = wrap<typeof ReplicadWorkerType>(new ReplicadWorker())
 
