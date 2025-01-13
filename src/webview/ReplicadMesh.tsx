@@ -40,7 +40,6 @@ export default React.memo(function ShapeMeshes({ faces, edges }: any) {
       <mesh geometry={body.current} >
         {/* the offsets are here to avoid z fighting between the mesh and the lines */}
         <meshStandardMaterial
-          color='#5a8296'
           polygonOffset
           polygonOffsetFactor={2.0}
           polygonOffsetUnits={1.0}

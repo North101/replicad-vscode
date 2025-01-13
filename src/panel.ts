@@ -5,6 +5,8 @@ import { MessageTypes } from './types'
 let panel: vscode.WebviewPanel | undefined
 
 export function createPanel(context: vscode.ExtensionContext) {
+  if (panel) return
+
   // Utilize method on vscode.window object to create webview
   panel = vscode.window.createWebviewPanel(
     'webview',
@@ -15,7 +17,7 @@ export function createPanel(context: vscode.ExtensionContext) {
     },
     {
       enableScripts: true,
-      enableFindWidget: true
+      enableFindWidget: true,
     },
   )
   panel.onDidDispose(() => {
@@ -84,6 +86,12 @@ function createWebviewHTML(scriptUri: vscode.Uri): string {
   </head>
   <body>
     <div id="root" />
+    <style>
+      body {
+        background: var(--vscode-editor-background);
+        color: var(--vscode-editor-foreground);
+      }
+    </style>
     <script>
         const vscode = acquireVsCodeApi()
         window.onload = function() {

@@ -79,7 +79,7 @@ export default function ReplicadApp() {
           width: '100vw',
           height: '100vh',
           background: 'var(--vscode-editor-background)',
-          color: 'var(--vscode-editor-foreground)'
+          color: 'var(--vscode-editor-foreground)',
         }}
       >
         Loading...

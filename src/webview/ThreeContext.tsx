@@ -24,7 +24,7 @@ export default function ThreeContext({ children, ...props }: any) {
         style={{
           width: '100vw',
           height: '100vh',
-          backgroundColor: '#f5f5f5',
+          backgroundColor: 'var(--vscode-editor-background)',
         }}
         dpr={dpr}
         frameloop='demand'
