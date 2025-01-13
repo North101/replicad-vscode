@@ -1,9 +1,9 @@
+import { expose } from 'comlink'
+import * as replicad from 'replicad'
 import opencascade from 'replicad-opencascadejs/src/replicad_single.js?inline'
 import opencascadeWasm from 'replicad-opencascadejs/src/replicad_single.wasm?url'
-import * as replicad from 'replicad'
-import { expose } from 'comlink'
+import { InputShape, Mesh } from './types'
 import { buildModuleEvaluator, runInContext } from './vm'
-import { Mesh } from './types'
 
 // This is the logic to load the web assembly code into replicad
 let loaded = false;
@@ -23,36 +23,38 @@ const init = async () => {
 };
 const started = init();
 
-const getShape = (data: any) => {
-  if (typeof data === 'object') {
-    return data.shape
-  }
-  return data
+function createBasicShapeConfig(
+  inputShapes: unknown | unknown[] | InputShape[] | InputShape,
+): replicad.Shape<any>[] {
+  if (!inputShapes) return []
+
+  // We accept a single shape or an array of shapes
+  const shapes = Array.isArray(inputShapes)
+    ? inputShapes
+    : [inputShapes]
+
+  return shapes
+    .map((inputShape): replicad.Shape<any> =>
+      // We accept shapes without additional configuration
+      inputShape.shape
+        ? inputShape.shape
+        : inputShape
+    )
 }
 
 async function createBlob(code: string, params: object): Promise<Blob[]> {
   const shapes = await runCode(code, params)
-  if (Array.isArray(shapes)) {
-    return shapes.map(getShape).map(shape => shape.blobSTL())
-  }
-  return [
-    getShape(shapes).blobSTL()
-  ];
+  return createBasicShapeConfig(shapes)
+    .map(shape => shape.blobSTL())
 }
 
 async function createMesh(code: string, params: object): Promise<Mesh[]> {
   const shapes = await runCode(code, params)
-  if (Array.isArray(shapes)) {
-    return shapes.map(getShape).map(shape => ({
+  return createBasicShapeConfig(shapes)
+    .map(shape => ({
       faces: shape.mesh(),
       edges: shape.meshEdges(),
     }))
-  }
-  const shape = getShape(shapes)
-  return [{
-    faces: shape.mesh(),
-    edges: shape.meshEdges(),
-  }];
 }
 
 function runInContextAsOC(code: string, context = {}) {
