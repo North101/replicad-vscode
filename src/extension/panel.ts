@@ -18,20 +18,20 @@ export function createPanel(context: vscode.ExtensionContext) {
     {
       enableScripts: true,
       enableFindWidget: true,
+      localResourceRoots: [
+        vscode.Uri.file(path.join(context.extensionPath, 'build')),
+      ],
     },
   )
   panel.onDidDispose(() => {
     panel = null
   })
 
-  // Set URI to be the path to bundle
-  const scriptPath: vscode.Uri = vscode.Uri.joinPath(context.extensionUri, 'build', 'webview.js')
-
-  // Set webview URI to pass into html script
-  const scriptUri: vscode.Uri = panel.webview.asWebviewUri(scriptPath)
-
   // Render html of webview here
-  panel.webview.html = createWebviewHTML(scriptUri)
+  panel.webview.html = createWebviewHTML(
+    panel.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'build', 'webview.js')),
+    panel.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'build', 'replicad-vscode.css')),
+  )
 
   panel.webview.onDidReceiveMessage(e => {
     const msg: MessageTypes = e
@@ -53,29 +53,47 @@ export function onDidChangeActiveTextEditor(editor?: vscode.TextEditor) {
   updatePanel(editor?.document)
 }
 
+export function onDidCloseTextDocument(document: vscode.TextDocument) {
+  if (!panel) return
+
+  const fileName = document.fileName
+  sendPanelMessage(panel, {
+    type: 'close',
+    fileName,
+  })
+}
+
 function updatePanel(document?: vscode.TextDocument) {
   if (!panel) return
 
   const isJavascript = document?.languageId == 'javascript'
   if (!isJavascript) return
 
+  const fileName = document.fileName
+  const text = document.getText()
+  if (!text.includes('replicad')) return
+
   setPanelTitle(panel, document)
   sendPanelMessage(panel, {
-    type: 'code',
-    value: document.getText(),
+    type: 'open',
+    fileName,
+    text,
   })
 }
 
-function setPanelTitle(panel: vscode.WebviewPanel, document: vscode.TextDocument) {
+const setPanelTitle = (panel: vscode.WebviewPanel, document: vscode.TextDocument) => {
   panel.title = `Preview ${path.basename(document.uri.fsPath)}`
 }
 
-function sendPanelMessage(panel: vscode.WebviewPanel, msg: MessageTypes) {
+const sendPanelMessage = (panel: vscode.WebviewPanel, msg: MessageTypes) => {
   panel.webview.postMessage(msg)
 }
 
 // Creates the HTML page for webview
-function createWebviewHTML(scriptUri: vscode.Uri) {
+const createWebviewHTML = (scriptUri: vscode.Uri, styleUri: vscode.Uri) => {
+  // Use a nonce to only allow specific scripts to be run
+  const nonce = getNonce()
+
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -83,25 +101,38 @@ function createWebviewHTML(scriptUri: vscode.Uri) {
     <title>Replicad sample app</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="https://replicad.xyz/img/favicon.ico" />
-    <link rel="stylesheet" href="https://unpkg.com/mvp.css">
-  </head>
-  <body>
-    <div id="root" />
+    <link rel="stylesheet" href="${styleUri}">
     <style>
       body {
+        padding: 0;
+        margin: 0;
         background: var(--vscode-editor-background);
         color: var(--vscode-editor-foreground);
       }
+      .modal-content {
+        color: var(--bs-body-color);
+      }
     </style>
+  </head>
+  <body>
+    <div id="root" />
     <script>
       const vscode = acquireVsCodeApi()
       window.onload = () => vscode.postMessage({
         type: 'init',
       })
     </script>
-    <script src="${scriptUri}" />
+    <script nonce="${nonce}" src="${scriptUri}" />
   </body>
 </html>
 `
+}
+
+const getNonce = () => {
+	let text = '';
+	const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+	for (let i = 0; i < 32; i++) {
+		text += possible.charAt(Math.floor(Math.random() * possible.length));
+	}
+	return text;
 }

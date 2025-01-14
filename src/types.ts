@@ -1,12 +1,19 @@
-export interface InitMessageType {
+export type InitMessageType = {
   type: 'init'
 }
 
-export interface CodeMessageType {
-  type: 'code'
-  value: string | null
+export type FileOpenMessageType = {
+  type: 'open'
+  fileName: string
+  text: string
+}
+
+export type FileCloseMessageType = {
+  type: 'close'
+  fileName: string
 }
 
 export type MessageTypes =
   | InitMessageType
-  | CodeMessageType
+  | FileOpenMessageType
+  | FileCloseMessageType

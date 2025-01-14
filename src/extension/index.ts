@@ -2,6 +2,7 @@ import vscode from 'vscode'
 import {
   createPanel,
   onDidChangeActiveTextEditor,
+  onDidCloseTextDocument,
   onDidSaveTextDocument,
 } from './panel'
 
@@ -10,6 +11,7 @@ import {
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument(onDidSaveTextDocument),
+    vscode.workspace.onDidCloseTextDocument(onDidCloseTextDocument),
     vscode.window.onDidChangeActiveTextEditor(onDidChangeActiveTextEditor),
     vscode.commands.registerTextEditorCommand(
       'replicad-vscode.preview',

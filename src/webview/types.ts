@@ -1,45 +1,59 @@
 import * as replicad from 'replicad'
-import { TopoDS_Shape } from 'replicad-opencascadejs'
+import { ReplicadMeshedEdges } from 'replicad-threejs-helper'
 
-export interface InputShape<T extends TopoDS_Shape> {
-  shape: replicad.Shape<T>
-  name?: string
+export type ShapeConfig = {
+  shape: replicad.AnyShape
   color?: string
   opacity?: number
-  highlight?: any
-  highlightEdge?: any
-  highlightFace?: any
-  strokeType?: string
+  name?: string
 }
 
-export type ShapeResult<T extends TopoDS_Shape> =
-  | replicad.Shape<T>
-  | replicad.Shape<T>[]
-  | InputShape<T>
-  | InputShape<T>[]
+export type ShapeResult =
+  | replicad.AnyShape
+  | replicad.AnyShape[]
+  | ShapeConfig
+  | ShapeConfig[]
 
-export interface Mesh<T extends TopoDS_Shape> extends Omit<InputShape<T>, 'shape'> {
+export type ShapeInput = {
+  code: string
+  name?: string
+  params: {}
+}
+
+export type ShapeMeshResult = ShapeInput & {
+  shapes: ShapeMesh[]
+}
+
+export type ShapeMesh = Omit<ShapeConfig, 'shape'> & {
   faces: replicad.ShapeMesh
-  edges: {
-    lines: number[]
-    edgeGroups: {
-      start: number
-      count: number
-      edgeId: number
-    }[]
-  }
+  edges: ReplicadMeshedEdges
 }
 
-export interface SuccessResult<T> {
+export type ShapeExportResult = ShapeInput & {
+  fileType: string
+  shapes: {
+    blob: Blob
+    name?: string
+  }[]
+}
+
+export type SuccessResult<T> = {
   type: 'success'
   value: T
 }
 
-export interface ErrorResult {
+export type LoadingResult<T> = {
+  type: 'loading'
+  value?: T
+}
+
+export type ErrorResult<T> = {
   type: 'error'
   error: unknown
+  value?: T
 }
 
 export type Result<T> =
   | SuccessResult<T>
-  | ErrorResult
+  | LoadingResult<T>
+  | ErrorResult<T>

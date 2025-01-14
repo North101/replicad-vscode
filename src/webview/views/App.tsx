@@ -1,37 +1,134 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
-import { wrap } from 'comlink'
-import FileSaver from 'file-saver'
-
-import ReplicadMesh from './ReplicadMesh'
-import ThreeContext from './ThreeContext'
+import Stack from 'react-bootstrap/esm/Stack'
 
 import { MessageTypes } from '../../types'
-import { Mesh, Result } from '../types'
-import type { ReplicadWorkerType } from '../worker.js'
-import ReplicadWorker from '../worker.js?worker&inline'
+import builderAPI from '../builderAPI'
+import { ShapeMesh, ShapeMeshResult, Result } from '../types'
+import Controls from './Controls'
+import DownloadModal from './DownloadModal'
+import InfiniteGrid from './InfiniteGrid'
+import ReplicadMesh from './ShapeGeometry'
+import ResultView from './ResultView'
+import ThreeContext from './ThreeContext'
+import ToolbarView from './ToolbarView'
+import Loading from './Loading'
 
-const worker = wrap<typeof ReplicadWorkerType>(new ReplicadWorker())
+const ShapesView = React.memo(({
+  shapes,
+  selected,
+}: { shapes: ShapeMesh[], selected: number | null }) => {
+  return (
+    <group>
+      {shapes
+        .map((shape, index) => <ReplicadMesh
+          key={index}
+          visible={(selected ?? index) == index}
+          {...shape}
+        />)
+      }
+    </group>
+  )
+})
+
+export type FileType = {
+  fileName: string
+  text: string
+  changed: boolean
+}
+
+type ShapesViewProps = {
+  file: FileType | null
+  shapes: ShapeMeshResult
+  state: 'success' | 'loading' | 'error'
+}
+
+const ShapesContainerView = ({
+  file,
+  shapes,
+  state,
+}: ShapesViewProps) => {
+  const [selected, setSelected] = useState<number | null>(null)
+  const [showDialog, setShowDialog] = useState<boolean>(false)
+
+  return (
+    <Stack
+      style={{
+        position: 'relative',
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: state == 'error'
+          ? 'var(--vscode-inputValidation-errorBackground)'
+          : 'var(--vscode-editor-background)',
+      }}>
+      {showDialog && <DownloadModal
+        file={file}
+        setShowDialog={setShowDialog}
+      />}
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+      }}>
+        <ThreeContext
+          orthographic
+          onCreated={(state) => (state.gl.localClippingEnabled = true)}
+        >
+          <InfiniteGrid />
+          <Controls enableDamping={false}>
+            <ShapesView shapes={shapes.shapes} selected={selected} />
+          </Controls>
+        </ThreeContext>
+        {state == 'loading' &&
+          <div className='navbar' style={{
+            position: 'absolute',
+            top: 'auto',
+            right: 'auto',
+            bottom: 'var(--bs-navbar-padding-y)',
+            left: 'var(--bs-navbar-padding-x)',
+          }}>
+            <Loading size={'3em'} />
+          </div>
+        }
+      </div>
+      <ToolbarView
+        shapes={shapes}
+        setSelected={setSelected}
+        setShowDialog={setShowDialog}
+      />
+    </Stack >
+  )
+}
 
 export default function ReplicadApp() {
-  const [code, setCode] = useState<string | null>(null)
-  const [params, setParams] = useState<{} | null>(null)
-  const [mesh, setMesh] = useState<Result<Mesh<any>[]> | null>(null)
-
-  const downloadModel = async () => {
-    if (!(code && params)) return
-
-    const name = await worker.extractDefaultNameFromCode(code)
-    const blob = await worker.createBlob(code, params)
-    FileSaver.saveAs(blob[0], `${name ?? 'shape'}.stl`)
-  }
+  const [file, setFile] = useState<FileType | null>(null)
+  const [shapes, setShapes] = useState<Result<ShapeMeshResult> | null>(null)
 
   useEffect(() => {
     window.addEventListener('message', (e: MessageEvent) => {
       const msg: MessageTypes = e.data
       switch (msg.type) {
-        case 'code': {
-          setCode(msg.value)
+        case 'open': {
+          setFile(state => {
+            if (state?.fileName == msg.fileName && state?.text == msg.text) {
+              return state
+            }
+
+            return {
+              fileName: msg.fileName,
+              text: msg.text,
+              changed: state?.fileName != msg.fileName,
+            }
+          })
+          return
+        }
+        case 'close': {
+          setFile((state) => {
+            return state?.fileName == msg.fileName
+              ? null
+              : state
+          })
+          builderAPI.clearCachedShape(msg.fileName)
           return
         }
       }
@@ -41,95 +138,62 @@ export default function ReplicadApp() {
   useEffect(() => {
     let isSubscribed = true
 
-    const getParams = async () => {
-      if (!code) return
-
-      const params = await worker.extractDefaultParamsFromCode(code)
-      if (!isSubscribed) return
-
-      setParams(params)
-    }
-
-    setParams(null)
-    getParams()
-
-    return () => {
-      isSubscribed = false
-    }
-  }, [code])
-
-  useEffect(() => {
-    let isSubscribed = true
-
-    const getMesh = async () => {
+    const getShapes = async () => {
       try {
-        if (!(code && params)) return
+        if (!file) return
 
-        const mesh = await worker.createMesh(code, params)
+        await builderAPI.ready()
+        const shapes = await builderAPI.buildShapesFromCode(file.fileName, file.text)
         if (!isSubscribed) return
 
-        setMesh({
+        setShapes({
           type: 'success',
-          value: mesh,
+          value: shapes,
         })
       } catch (e) {
         if (!isSubscribed) return
 
-        setMesh({
+        setShapes((state) => ({
           type: 'error',
           error: e,
-        })
+          value: state?.value,
+        }))
       }
     }
 
-    setMesh(null)
-    getMesh()
+    if (file?.changed ?? true) {
+      setShapes(null)
+    } else {
+      setShapes((state) => ({
+        type: 'loading',
+        value: state?.value,
+      }))
+    }
+    getShapes()
 
     return () => {
       isSubscribed = false
     }
-  }, [code, params])
+  }, [file?.fileName, file?.text, file?.changed])
+
+  if (!shapes?.value) {
+    return (
+      <ResultView>
+        {file
+          ? shapes?.type == 'error'
+            ? `${shapes.error}`
+            : 'Loading...'
+          : 'Invalid Model'
+        }
+      </ResultView>
+    )
+  }
 
   return (
-    mesh ? (
-      mesh.type == 'success' ? (
-        <ThreeContext>
-          {mesh.value.map((shape, index) => <ReplicadMesh
-            key={index}
-            {...shape}
-          />)}
-        </ThreeContext>
-      ) : (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '2em',
-            width: '100vw',
-            height: '100vh',
-            background: 'var(--vscode-editor-background)',
-            color: 'var(--vscode-editor-foreground)',
-          }}
-        >
-          Error
-        </div>
-      )
-    ) : (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '2em',
-          width: '100vw',
-          height: '100vh',
-          background: 'var(--vscode-editor-background)',
-          color: 'var(--vscode-editor-foreground)',
-        }}
-      >
-        {code ? 'Loading...' : 'Invalid Model'}
-      </div>
-    )
+    <ShapesContainerView
+      file={file}
+      shapes={shapes.value}
+      state={shapes.type}
+    />
   )
 }

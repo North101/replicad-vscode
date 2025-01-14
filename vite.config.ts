@@ -10,6 +10,13 @@ export default defineConfig({
   plugins: [
     reactPlugin(),
   ],
+  worker: {
+    rollupOptions: {
+      output: {
+        entryFileNames: `[name].js`,
+      },
+    }
+  },
   build: {
     outDir: 'build',
     lib: {
@@ -21,11 +28,12 @@ export default defineConfig({
     rollupOptions: {
       external: [
         'vscode',
-        'path'
+        'path',
       ],
       output: {
         entryFileNames: `[name].js`,
-      }
+        assetFileNames: `[name].[ext]`
+      },
     },
     assetsInlineLimit: 100 * 1024 * 1024
   },

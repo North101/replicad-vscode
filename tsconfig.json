@@ -1,23 +1,23 @@
 {
-	"compilerOptions": {
-		"moduleResolution": "bundler",
-		"strict": true,
-		"module": "ES2022",
-		"target": "ESNext",
-		"lib": [
-			"ESNext",
-			"DOM"
-		],
-		"jsx": "react-jsx",
-		"outDir": "dist",
-		"rootDir": "src",
-		"sourceMap": true,
-		"esModuleInterop": true
-	},
-	"include": [
-		"src"
-	],
-	"exclude": [
-		"node_modules"
-	]
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "strict": true,
+    "module": "ES2022",
+    "target": "ESNext",
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
+    "jsx": "react-jsx",
+    "outDir": "dist",
+    "rootDir": "src",
+    "sourceMap": true,
+    "esModuleInterop": true
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
